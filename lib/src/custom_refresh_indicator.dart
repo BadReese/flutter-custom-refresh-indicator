@@ -106,6 +106,8 @@ class CustomRefreshIndicator extends StatefulWidget {
   /// far enough to trigger a "pull to refresh" action.
   final AsyncCallback onRefresh;
 
+  final AsyncCallback? onLoadMore;
+
   /// Called on every indicator state change.
   final OnStateChanged? onStateChanged;
 
@@ -147,6 +149,7 @@ class CustomRefreshIndicator extends StatefulWidget {
     required this.child,
     required this.onRefresh,
     required this.builder,
+    this.onLoadMore,
     this.controller,
     this.trigger = IndicatorTrigger.leadingEdge,
     this.triggerMode = IndicatorTriggerMode.onEdge,
@@ -415,7 +418,15 @@ class CustomRefreshIndicatorState extends State<CustomRefreshIndicator>
       draggingCurve: draggingCurve,
     );
     try {
-      await widget.onRefresh();
+      if (widget.onLoadMore == null) {
+        await widget.onRefresh();
+      } else {
+        if (controller._edge == IndicatorEdge.leading) {
+          await widget.onRefresh();
+        } else {
+          await widget.onLoadMore!();
+        }
+      }
     } finally {
       /// If the user has programmatically hidden the pointer
       /// so it is not in "loading" state, then nothing needs to be done.
@@ -526,7 +537,16 @@ class CustomRefreshIndicatorState extends State<CustomRefreshIndicator>
         duration: widget.indicatorSettleDuration,
       );
       setIndicatorState(IndicatorState.loading);
-      await widget.onRefresh();
+
+      if (widget.onLoadMore == null) {
+        await widget.onRefresh();
+      } else {
+        if (controller._edge == IndicatorEdge.leading) {
+          await widget.onRefresh();
+        } else {
+          await widget.onLoadMore!();
+        }
+      }
     } finally {
       await _hideAfterRefresh();
     }
